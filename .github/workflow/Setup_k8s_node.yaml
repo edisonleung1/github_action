@@ -1,0 +1,60 @@
+name: Setup CentOS K8s Node
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-centos-node:
+    name: SSH and Configure Kubernetes Node
+    runs-on: [ self-hosted, centos ]
+
+    steps:
+    - name: Set up SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Install system dependencies
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          'sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl'
+
+    - name: Disable SELinux
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          'sudo setenforce 0 && sudo sed -i "s/^SELINUX=enforcing/SELINUX=permissive/" /etc/selinux/config'
+
+    - name: Disable swap
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          'sudo swapoff -a && sudo sed -i "/ swap / s/^/#/" /etc/fstab'
+
+    - name: Add Kubernetes YUM repository
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+          EOF"
+
+    - name: Install Kubernetes tools
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          'sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes && sudo systemctl enable --now kubelet'
+
+    - name: Load br_netfilter module
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          'sudo modprobe br_netfilter && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables'
+
+    - name: Join Kubernetes cluster
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo ${{ secrets.K8S_JOIN_CMD }}"

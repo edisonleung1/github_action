@@ -1,0 +1,75 @@
+name: Setup K8s Control Plane on CentOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-control-plane:
+    runs-on: [ self-hosted, centos ]
+
+    steps:
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Install dependencies
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl"
+
+    - name: Disable SELinux
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo setenforce 0 && sudo sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config"
+
+    - name: Disable swap
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
+
+    - name: Add Kubernetes YUM repo
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+        cat <<EOF2 | sudo tee /etc/yum.repos.d/kubernetes.repo
+        [kubernetes]
+        name=Kubernetes
+        baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+        enabled=1
+        gpgcheck=1
+        repo_gpgcheck=1
+        gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        EOF2
+        EOF
+
+    - name: Install Kubernetes tools
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes && sudo systemctl enable --now kubelet"
+
+    - name: Enable networking
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo modprobe br_netfilter && echo '1' | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables"
+
+    - name: Initialize control plane
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "sudo kubeadm init --pod-network-cidr=${{ secrets.POD_NETWORK_CIDR }}"
+
+    - name: Set up kubectl config for regular user
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "mkdir -p ~/.kube && sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config && sudo chown $(id -u):$(id -g) ~/.kube/config"
+
+    - name: Install Flannel network plugin (example)
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+
+    - name: Output join command
+      run: |
+        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+          "kubeadm token create --print-join-command"
