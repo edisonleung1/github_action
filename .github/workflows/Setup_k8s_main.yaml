@@ -1,108 +1,101 @@
-name: Setup K8s Main
+name: Setup Kubernetes Control Plane
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
-  setup-control-plane:
-    runs-on: [ self-hosted, centos ]
+  setup-k8s-control-plane:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+      - name: Prepare SSH Key and Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SECRET }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
-    - name: Install dependencies
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo yum update -y && sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl"
+      - name: Install Kubernetes Tools
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+            set -eux
+            if [ -f /etc/debian_version ]; then
+              sudo apt-get update
+              sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+              sudo mkdir -p /etc/apt/keyrings
+              curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+              echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+              sudo apt-get update
+              sudo apt-get install -y kubelet kubeadm kubectl
+              sudo apt-mark hold kubelet kubeadm kubectl
+            else
+              sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl
+              cat <<EOL | sudo tee /etc/yum.repos.d/kubernetes.repo
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+              enabled=1
+              gpgcheck=1
+              repo_gpgcheck=1
+              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+              EOL
+              sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+              sudo systemctl enable --now kubelet
+            fi
+          EOF
 
-    - name: Disable SELinux
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo setenforce 0 && sudo sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config"
+      - name: Disable Swap
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
 
-    - name: Disable swap
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
+      - name: Initialize Kubernetes Control Plane
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+            sudo kubeadm init --pod-network-cidr=192.168.0.0/16
 
-    - name: Load br_netfilter module
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo modprobe br_netfilter && echo 'br_netfilter' | sudo tee /etc/modules-load.d/k8s.conf"
+            # Set up kubectl config
+            mkdir -p ~/.kube
+            sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+            sudo chown $(id -u):$(id -g) ~/.kube/config
+          EOF
 
-    - name: Configure sysctl for Kubernetes networking
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "echo 'net.bridge.bridge-nf-call-ip6tables = 1' | sudo tee /etc/sysctl.d/k8s.conf && \
-           echo 'net.bridge.bridge-nf-call-iptables = 1' | sudo tee -a /etc/sysctl.d/k8s.conf && \
-           echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/k8s.conf && \
-           sudo sysctl --system"
+      - name: Install Pod Network (Calico)
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
 
-    - name: Add Kubernetes YUM repo
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-        cat <<EOF2 | sudo tee /etc/yum.repos.d/kubernetes.repo
-        [kubernetes]
-        name=Kubernetes
-        baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
-        enabled=1
-        gpgcheck=1
-        repo_gpgcheck=1
-        gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
-        EOF2
-        EOF
+      - name: Install Kubernetes Dashboard
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
-    - name: Update YUM cache
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo yum clean all && sudo yum makecache --refresh"
+      - name: Create Admin User and Bind Role
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+            cat <<EOF2 | kubectl apply -f -
+            apiVersion: v1
+            kind: ServiceAccount
+            metadata:
+              name: admin-user
+              namespace: kubernetes-dashboard
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: ClusterRoleBinding
+            metadata:
+              name: admin-user-binding
+            roleRef:
+              apiGroup: rbac.authorization.k8s.io
+              kind: ClusterRole
+              name: cluster-admin
+            subjects:
+              - kind: ServiceAccount
+                name: admin-user
+                namespace: kubernetes-dashboard
+            EOF2
+          EOF
 
-    - name: Install containerd
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo yum install -y containerd && sudo mkdir -p /etc/containerd && sudo containerd config default | sudo tee /etc/containerd/config.toml && \
-           sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml && \
-           sudo systemctl restart containerd && sudo systemctl enable --now containerd"
-
-    - name: Install Kubernetes tools
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes && sudo systemctl enable --now kubelet"
-
-    - name: Turn off firewall (optional, for lab/demo)
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo systemctl stop firewalld && sudo systemctl disable firewalld"
-
-    - name: Initialize Kubernetes master node
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "sudo kubeadm init --pod-network-cidr=${{ secrets.POD_NETWORK_CIDR }}"
-
-    - name: Set up kubectl config for regular user
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "mkdir -p ~/.kube && sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config && sudo chown $(id -u):$(id -g) ~/.kube/config"
-
-    - name: Install Flannel network plugin (example)
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
-
-    - name: Install Kubernetes Dashboard
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
-
-    - name: Output join command
-      run: |
-        ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-          "kubeadm token create --print-join-command"
+      - name: Output Dashboard Login Token
+        run: |
+          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+            TOKEN=$(kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o jsonpath="{.data.token}" | base64 -d)
+            echo "Dashboard Login Token:"
+            echo "$TOKEN"
+          EOF
