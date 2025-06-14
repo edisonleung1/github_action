@@ -18,34 +18,38 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Install Kubernetes Tools
+      - name: Install Kubernetes Tools (Debian)
+        if: runner.os == 'Linux'
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-            set -eux
-            if [ -f /etc/debian_version ]; then
-              sudo apt-get update
-              sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
-              sudo mkdir -p /etc/apt/keyrings
-              curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-              echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-              sudo apt-get update
-              sudo apt-get install -y kubelet kubeadm kubectl
-              sudo apt-mark hold kubelet kubeadm kubectl
-            else
-              sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl
-              cat <<EOL | sudo tee /etc/yum.repos.d/kubernetes.repo
-              [kubernetes]
-              name=Kubernetes
-              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
-              enabled=1
-              gpgcheck=1
-              repo_gpgcheck=1
-              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-              EOL
-              sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-              sudo systemctl enable --now kubelet
-            fi
-          EOF
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "test -f /etc/debian_version"
+          
+      - name: Setup Kubernetes on Debian-based system
+        if: runner.os == 'Linux'
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo apt-get update"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo apt-get install -y apt-transport-https ca-certificates curl gnupg"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /etc/apt/keyrings"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main' | sudo tee /etc/apt/sources.list.d/kubernetes.list"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo apt-get update"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo apt-get install -y kubelet kubeadm kubectl"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo apt-mark hold kubelet kubeadm kubectl"
+
+      - name: Install Kubernetes Tools (CentOS)
+        if: runner.os == 'Linux'
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "test -f /etc/centos-release || test -f /etc/redhat-release"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "echo '[kubernetes]
+            name=Kubernetes
+            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+            enabled=1
+            gpgcheck=1
+            repo_gpgcheck=1
+            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' | sudo tee /etc/yum.repos.d/kubernetes.repo"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now kubelet"
+
 
       - name: Disable Swap
         run: |
