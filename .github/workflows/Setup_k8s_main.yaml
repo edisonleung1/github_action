@@ -21,7 +21,6 @@ jobs:
       - name: Install Kubernetes on CentOS 9
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
             sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
               [kubernetes]
               name=Kubernetes
@@ -32,6 +31,7 @@ jobs:
               gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
             EOF"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
             sudo yum clean all &&
             sudo yum makecache &&
             sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes &&
