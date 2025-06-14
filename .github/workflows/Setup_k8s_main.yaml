@@ -14,13 +14,13 @@ jobs:
       - name: Prepare SSH Key and Known Hosts
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VM_SECRET }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Install Kubernetes Tools
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
             set -eux
             if [ -f /etc/debian_version ]; then
               sudo apt-get update
@@ -49,11 +49,11 @@ jobs:
 
       - name: Disable Swap
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
 
       - name: Initialize Kubernetes Control Plane
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
             sudo kubeadm init --pod-network-cidr=192.168.0.0/16
 
             # Set up kubectl config
@@ -64,15 +64,15 @@ jobs:
 
       - name: Install Pod Network (Calico)
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
 
       - name: Install Kubernetes Dashboard
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
       - name: Create Admin User and Bind Role
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
             cat <<EOF2 | kubectl apply -f -
             apiVersion: v1
             kind: ServiceAccount
@@ -97,7 +97,7 @@ jobs:
 
       - name: Output Dashboard Login Token
         run: |
-          ssh ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
             TOKEN=$(kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o jsonpath="{.data.token}" | base64 -d)
             echo "Dashboard Login Token:"
             echo "$TOKEN"
