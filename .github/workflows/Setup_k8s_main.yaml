@@ -18,19 +18,24 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Install Kubernetes Tools (CentOS)
+      - name: Install Kubernetes on CentOS 9
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "test -f /etc/centos-release || test -f /etc/redhat-release"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "echo '[kubernetes]
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
+            sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<EOF
+            [kubernetes]
             name=Kubernetes
-            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el9-x86_64
             enabled=1
             gpgcheck=1
             repo_gpgcheck=1
-            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' | sudo tee /etc/yum.repos.d/kubernetes.repo"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now kubelet"
+            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+            EOF
+            sudo yum clean all &&
+            sudo yum makecache &&
+            sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes &&
+            sudo systemctl enable --now kubelet
+          "
 
       - name: Disable Swap
         run: |
