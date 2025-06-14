@@ -2,10 +2,9 @@ name: Setup K8s Main
 
 on:
   workflow_dispatch:
-  on:
-    push:
-      branches:
-        - main
+  push:
+    branches:
+      - main
 
 jobs:
   setup-control-plane:
