@@ -2,6 +2,9 @@ name: Setup Kubernetes Control Plane
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   setup-k8s-control-plane:
