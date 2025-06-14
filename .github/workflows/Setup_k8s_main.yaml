@@ -22,15 +22,15 @@ jobs:
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
             sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
-            sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<EOF
-            [kubernetes]
-            name=Kubernetes
-            baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el9-x86_64
-            enabled=1
-            gpgcheck=1
-            repo_gpgcheck=1
-            gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-            EOF
+            {sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<EOF
+              [kubernetes]
+              name=Kubernetes
+              baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el9-x86_64
+              enabled=1
+              gpgcheck=1
+              repo_gpgcheck=1
+              gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+              EOF}
             sudo yum clean all &&
             sudo yum makecache &&
             sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes &&
