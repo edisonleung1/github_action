@@ -31,7 +31,7 @@ jobs:
 
       - name: Configure Sysctl for Kubernetes
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cat > /etc/sysctl.d/k8s.conf <<'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/sysctl.d/k8s.conf > /dev/null <<'EOF'
           net.ipv4.ip_forward = 1
           EOF"
 
@@ -62,54 +62,54 @@ jobs:
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
 
-      - name: Initialize Kubernetes Control Plane
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-            sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+      # - name: Initialize Kubernetes Control Plane
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+      #       sudo kubeadm init --pod-network-cidr=192.168.0.0/16
 
-            # Set up kubectl config
-            mkdir -p ~/.kube
-            sudo cp /etc/kubernetes/admin.conf ~/.kube/config
-            sudo chown $(id -u):$(id -g) ~/.kube/config
-          EOF
+      #       # Set up kubectl config
+      #       mkdir -p ~/.kube
+      #       sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+      #       sudo chown $(id -u):$(id -g) ~/.kube/config
+      #     EOF
 
-      - name: Install Pod Network (Calico)
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
+      # - name: Install Pod Network (Calico)
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
 
-      - name: Install Kubernetes Dashboard
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+      # - name: Install Kubernetes Dashboard
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
-      - name: Create Admin User and Bind Role
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-            cat <<EOF2 | kubectl apply -f -
-            apiVersion: v1
-            kind: ServiceAccount
-            metadata:
-              name: admin-user
-              namespace: kubernetes-dashboard
-            ---
-            apiVersion: rbac.authorization.k8s.io/v1
-            kind: ClusterRoleBinding
-            metadata:
-              name: admin-user-binding
-            roleRef:
-              apiGroup: rbac.authorization.k8s.io
-              kind: ClusterRole
-              name: cluster-admin
-            subjects:
-              - kind: ServiceAccount
-                name: admin-user
-                namespace: kubernetes-dashboard
-            EOF2
-          EOF
+      # - name: Create Admin User and Bind Role
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+      #       cat <<EOF2 | kubectl apply -f -
+      #       apiVersion: v1
+      #       kind: ServiceAccount
+      #       metadata:
+      #         name: admin-user
+      #         namespace: kubernetes-dashboard
+      #       ---
+      #       apiVersion: rbac.authorization.k8s.io/v1
+      #       kind: ClusterRoleBinding
+      #       metadata:
+      #         name: admin-user-binding
+      #       roleRef:
+      #         apiGroup: rbac.authorization.k8s.io
+      #         kind: ClusterRole
+      #         name: cluster-admin
+      #       subjects:
+      #         - kind: ServiceAccount
+      #           name: admin-user
+      #           namespace: kubernetes-dashboard
+      #       EOF2
+      #     EOF
 
-      - name: Output Dashboard Login Token
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-            TOKEN=$(kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o jsonpath="{.data.token}" | base64 -d)
-            echo "Dashboard Login Token:"
-            echo "$TOKEN"
-          EOF
+      # - name: Output Dashboard Login Token
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+      #       TOKEN=$(kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o jsonpath="{.data.token}" | base64 -d)
+      #       echo "Dashboard Login Token:"
+      #       echo "$TOKEN"
+      #     EOF
