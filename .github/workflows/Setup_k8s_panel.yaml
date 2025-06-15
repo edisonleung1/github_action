@@ -22,119 +22,120 @@ jobs:
           ls -lrt ${{ github.workspace }}
           scp -r config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
 
-      # - name: Prepare SSH Key and Known Hosts
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-      #     chmod 600 ~/.ssh/id_rsa
-      #     ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+      - name: Prepare SSH Key and Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
-      # - name: Configure host name
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo hostnamectl set-hostname k8s-control-plane"
+      - name: Configure host name
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo hostnamectl set-hostname k8s-control-plane"
 
-      # - name: Configure dns
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/hosts > /dev/null <<EOF
-      #     ${{ secrets.VM_HOST }} k8s-control-plane
-      #     EOF"
+      - name: Configure dns
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/hosts > /dev/null <<EOF
+          ${{ secrets.VM_HOST }} k8s-control-plane
+          EOF"
 
-      # - name: Configure repository for Kubernetes
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
-      #     [kubernetes]
-      #     name=Kubernetes
-      #     baseurl=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/
-      #     enabled=1
-      #     gpgcheck=1
-      #     gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
-      #     EOF"
+      - name: Configure repository for Kubernetes
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
+          EOF"
 
-      # - name: Configure Sysctl for Kubernetes
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/sysctl.d/k8s.conf > /dev/null <<'EOF'
-      #     net.ipv4.ip_forward = 1
-      #     EOF"
+      - name: Configure Sysctl for Kubernetes
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/sysctl.d/k8s.conf > /dev/null <<'EOF'
+          net.ipv4.ip_forward = 1
+          EOF"
 
-      # - name: Apply sysctl settings
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo sysctl --system"
+      - name: Apply sysctl settings
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo sysctl --system"
 
-      # - name: Install container runtime (containerd)
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
-      #       sudo dnf install -y containerd.io && 
-      #       sudo systemctl enable --now containerd
-      #     "
-      # - name: Configure containerd
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo mkdir -p /etc/containerd && sudo containerd config default &&
-      #       sudo tee /etc/containerd/config.toml > /dev/null &&
-      #       sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml &&
-      #       sudo systemctl restart containerd
-      #       "
+      - name: Install container runtime (containerd)
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
+            sudo dnf install -y containerd.io && 
+            sudo systemctl enable --now containerd
+          "
+      - name: Configure containerd
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo mkdir -p /etc/containerd && sudo containerd config default &&
+            sudo tee /etc/containerd/config.toml > /dev/null &&
+            sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml &&
+            sudo systemctl restart containerd
+            "
 
-      # - name: Disable Swap
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
+      - name: Disable Swap
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
 
-      # - name: Install Required Packages
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo yum install -y kubectl &&
-      #       sudo yum clean all &&
-      #       sudo yum makecache &&
-      #       sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-      #     "
-      # - name: Configure firewall for kubernetes
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo firewall-cmd --permanent --add-port=6443/tcp
-      #       sudo firewall-cmd --permanent --add-port=10250/tcp
-      #       sudo firewall-cmd --reload
-      #     "
-      # - name: Initialize Kubernetes Control Plane
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo systemctl enable --now kubelet
-      #       sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-      #     "
+      - name: Install Required Packages
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo yum install -y kubectl &&
+            sudo yum clean all &&
+            sudo yum makecache &&
+            sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+          "
+      - name: Configure firewall for kubernetes
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo firewall-cmd --permanent --add-port=6443/tcp
+            sudo firewall-cmd --permanent --add-port=10250/tcp
+            sudo firewall-cmd --reload
+          "
+      - name: Initialize Kubernetes Control Plane
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo systemctl enable --now kubelet
+            sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+          "
 
-      # - name: Configure kubectl for the user
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       mkdir -p /home/${{ secrets.SSH_USER }}/.kube
-      #       sudo cp /etc/kubernetes/admin.conf /home/${{ secrets.SSH_USER }}/.kube/config
-      #       sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /home/${{ secrets.SSH_USER }}/.kube/config
-      #     "
+      - name: Configure kubectl for the user
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            mkdir -p /home/${{ secrets.SSH_USER }}/.kube
+            sudo cp /etc/kubernetes/admin.conf /home/${{ secrets.SSH_USER }}/.kube/config
+            sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /home/${{ secrets.SSH_USER }}/.kube/config
+          "
 
-      #   # sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER_GROUP }} /home/${{ secrets.SSH_USER }}/.kube
+        # sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER_GROUP }} /home/${{ secrets.SSH_USER }}/.kube
 
-      # - name: Install Pod Network (Calico)
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
-      #       kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
-      #     "
+      - name: Install Pod Network (Calico)
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
+            kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+          "
 
-      # - name: Configure firewall for dashboard 
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo firewall-cmd --permanent --add-port=30000-32767/tcp
-      #       sudo firewall-cmd --permanent --add-port=10251/tcp 
-      #       sudo firewall-cmd --permanent --add-port=10252/tcp
-      #       sudo firewall-cmd --reload
-      #     "
+      - name: Configure firewall for dashboard 
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo firewall-cmd --permanent --add-port=30000-32767/tcp
+            sudo firewall-cmd --permanent --add-port=10251/tcp 
+            sudo firewall-cmd --permanent --add-port=10252/tcp
+            sudo firewall-cmd --reload
+          "
 
-      # - name: Install Kubernetes Dashboard
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+      - name: Install Kubernetes Dashboard
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
       - name: Create Admin User and Bind Role
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
             kubectl apply -f /tmp/config/dashboard.yaml
           "
 
@@ -145,3 +146,7 @@ jobs:
           echo "Dashboard Login Token:"
           echo "$TOKEN"
           EOF
+
+      - name: Clean up temporary files
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "rm -rf /tmp/config"
