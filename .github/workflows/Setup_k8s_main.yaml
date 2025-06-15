@@ -62,16 +62,15 @@ jobs:
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo swapoff -a && sudo sed -i '/ swap / s/^/#/' /etc/fstab"
 
-      # - name: Initialize Kubernetes Control Plane
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-      #       sudo kubeadm init --pod-network-cidr=192.168.0.0/16
-
-      #       # Set up kubectl config
-      #       mkdir -p ~/.kube
-      #       sudo cp /etc/kubernetes/admin.conf ~/.kube/config
-      #       sudo chown $(id -u):$(id -g) ~/.kube/config
-      #     EOF
+      - name: Initialize Kubernetes Control Plane
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
+            sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+            # Set up kubectl config
+            mkdir -p ~/.kube
+            sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+            sudo chown $(id -u):$(id -g) ~/.kube/config
+          EOF
 
       # - name: Install Pod Network (Calico)
       #   run: |
