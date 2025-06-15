@@ -111,6 +111,7 @@ jobs:
       - name: Install Pod Network (Calico)
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
             kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml --validate=false
           "
 
