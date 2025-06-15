@@ -20,7 +20,7 @@ jobs:
           pwd
           ls -lrt
           ls -lrt ${{ github.workspace }}
-          scp config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
+          scp -r config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
 
       # - name: Prepare SSH Key and Known Hosts
       #   run: |
