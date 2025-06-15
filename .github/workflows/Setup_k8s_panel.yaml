@@ -17,6 +17,7 @@ jobs:
 
       - name: Copy Kubernetes YAML to remote server
         run: |
+          ls -lrt
           scp config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
 
       # - name: Prepare SSH Key and Known Hosts
@@ -98,13 +99,6 @@ jobs:
       #       sudo systemctl enable --now kubelet
       #       sudo kubeadm init --pod-network-cidr=192.168.0.0/16
       #     "
-        
-      # # - name: Add Kubernetes certificate into trusted CA
-      # #   run: |
-      # #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      # #       sudo cp /etc/kubernetes/pki/ca.crt /etc/pki/ca-trust/source/anchors/k8s-ca.crt
-      # #       sudo update-ca-trust
-      # #     "
 
       # - name: Configure kubectl for the user
       #   run: |
