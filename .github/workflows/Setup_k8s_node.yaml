@@ -1,4 +1,4 @@
-name: Setup CentOS K8s Node
+name: Setup Kubernetes worker node
 
 on:
   workflow_dispatch:
