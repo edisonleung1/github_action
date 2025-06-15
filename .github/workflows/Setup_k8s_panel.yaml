@@ -141,11 +141,11 @@ jobs:
 
       - name: Output Dashboard Login Token
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-          TOKEN=$(kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') -o jsonpath="{.data.token}" | base64 -d)
-          echo "Dashboard Login Token:"
-          echo "$TOKEN"
-          EOF
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            TOKEN=$(kubectl -n kubernetes-dashboard get secret)
+            echo "Dashboard Login Token:"
+            echo "$TOKEN"
+          "
 
       - name: Clean up temporary files
         run: |
