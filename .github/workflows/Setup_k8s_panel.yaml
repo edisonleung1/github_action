@@ -39,13 +39,6 @@ jobs:
           gpgkey=https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key
           EOF"
 
-      - name: Add Kubernetes certificate into trusted CA
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo cp /etc/kubernetes/pki/ca.crt /etc/pki/ca-trust/source/anchors/k8s-ca.crt
-            sudo update-ca-trust
-          "
-
       - name: Configure Sysctl for Kubernetes
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/sysctl.d/k8s.conf > /dev/null <<'EOF'
@@ -98,6 +91,13 @@ jobs:
             sudo kubeadm init --pod-network-cidr=192.168.0.0/16
           "
         
+      # - name: Add Kubernetes certificate into trusted CA
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+      #       sudo cp /etc/kubernetes/pki/ca.crt /etc/pki/ca-trust/source/anchors/k8s-ca.crt
+      #       sudo update-ca-trust
+      #     "
+
       - name: Configure kubectl for the user
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
@@ -111,7 +111,7 @@ jobs:
       - name: Install Pod Network (Calico)
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+            kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml --validate=false
           "
 
       # - name: Configure firewall for dashboard 
