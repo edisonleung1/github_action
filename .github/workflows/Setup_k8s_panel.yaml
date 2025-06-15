@@ -42,8 +42,8 @@ jobs:
       - name: Add Kubernetes certificate into trusted CA
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo cp /etc/kubernetes/pki/ca.crt /usr/local/share/ca-certificates/k8s-ca.crt
-            sudo update-ca-certificates
+            sudo cp /etc/kubernetes/pki/ca.crt /etc/pki/ca-trust/source/anchors/k8s-ca.crt
+            sudo update-ca-trust
           "
 
       - name: Configure Sysctl for Kubernetes
