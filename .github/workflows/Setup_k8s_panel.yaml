@@ -128,24 +128,24 @@ jobs:
             sudo firewall-cmd --reload
           "
 
-      - name: Install Kubernetes Dashboard
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+      # - name: Install Kubernetes Dashboard
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
-      - name: Create Admin User and Bind Role
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
-            kubectl apply -f /tmp/config/dashboard.yaml
-          "
+      # - name: Create Admin User and Bind Role
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+      #       export KUBECONFIG=/home/${{ secrets.SSH_USER }}/.kube/config
+      #       kubectl apply -f /tmp/config/dashboard.yaml
+      #     "
 
-      - name: Output Dashboard Login Token
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            TOKEN=$(kubectl -n kubernetes-dashboard get secret)
-            echo "Dashboard Login Token:"
-            echo "$TOKEN"
-          "
+      # - name: Output Dashboard Login Token
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+      #       TOKEN=$(kubectl -n kubernetes-dashboard get secret)
+      #       echo "Dashboard Login Token:"
+      #       echo "$TOKEN"
+      #     "
 
       - name: Clean up temporary files
         run: |
