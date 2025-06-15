@@ -115,18 +115,18 @@ jobs:
             kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
           "
 
-      # - name: Configure firewall for dashboard 
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-      #       sudo firewall-cmd --permanent --add-port=30000-32767/tcp
-      #       sudo firewall-cmd --permanent --add-port=10251/tcp 
-      #       sudo firewall-cmd --permanent --add-port=10252/tcp
-      #       sudo firewall-cmd --reload
-      #     "
+      - name: Configure firewall for dashboard 
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo firewall-cmd --permanent --add-port=30000-32767/tcp
+            sudo firewall-cmd --permanent --add-port=10251/tcp 
+            sudo firewall-cmd --permanent --add-port=10252/tcp
+            sudo firewall-cmd --reload
+          "
 
-      # - name: Install Kubernetes Dashboard
-      #   run: |
-      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+      - name: Install Kubernetes Dashboard
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 
       # - name: Create Admin User and Bind Role
       #   run: |
