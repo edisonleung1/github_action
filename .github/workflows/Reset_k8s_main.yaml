@@ -1,0 +1,17 @@
+name: Reset Kubernetes Control Plane
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-k8s-control-plane:
+    runs-on: self-hosted
+
+    steps:
+      - name: Remove repository for Kubernetes
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo rm /etc/yum.repos.d/kubernetes.repo"
+
+      - name: Apply sysctl settings
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo sysctl --system"

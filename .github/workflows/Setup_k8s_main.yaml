@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo bash -c 'echo "${{ secrets.VM_HOST }} k8s-control-plane" >> /etc/hosts'
 
-      - name: Update System and Install Dependencies
+      - name: Configure repository for Kubernetes
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
           [kubernetes]
