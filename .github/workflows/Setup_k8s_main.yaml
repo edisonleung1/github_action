@@ -18,6 +18,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Configure host name
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo hostnamectl set-hostname k8s-control-plane"
+
       - name: Update System and Install Dependencies
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/yum.repos.d/kubernetes.repo > /dev/null <<'EOF'
