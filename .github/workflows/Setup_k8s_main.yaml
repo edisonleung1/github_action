@@ -42,7 +42,8 @@ jobs:
       - name: Install container runtime (containerd)
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo yum install -y containerd && 
+            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
+            sudo dnf install -y containerd.io && 
             sudo systemctl enable --now containerd
           "
 
@@ -51,7 +52,6 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
 
             sudo yum install -y kubectl &&
-            sudo yum install -y yum-utils device-mapper-persistent-data lvm2 curl &&
             sudo yum clean all &&
             sudo yum makecache &&
             sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes &&
