@@ -17,6 +17,7 @@ jobs:
 
       - name: Copy Kubernetes YAML to remote server
         run: |
+          pwd
           ls -lrt
           scp config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
 
