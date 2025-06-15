@@ -86,7 +86,9 @@ jobs:
 
       - name: Install Pod Network (Calico)
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            sudo kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+          "
 
       # - name: Configure firewall for dashboard 
       #   run: |
