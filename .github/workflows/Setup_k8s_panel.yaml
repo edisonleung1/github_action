@@ -24,9 +24,9 @@ jobs:
 
       - name: Configure dns
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo echo '${{ secrets.VM_HOST }} k8s-control-plane' >> /etc/hosts
-          "
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo tee /etc/hosts > /dev/null <<EOF
+          ${{ secrets.VM_HOST }} k8s-control-plane
+          EOF"
 
       - name: Configure repository for Kubernetes
         run: |
