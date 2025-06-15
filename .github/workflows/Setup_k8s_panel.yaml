@@ -11,6 +11,14 @@ jobs:
     runs-on: self-hosted
 
     steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Copy Kubernetes YAML to remote server
+        run: |
+          scp config ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
+
       # - name: Prepare SSH Key and Known Hosts
       #   run: |
       #     mkdir -p ~/.ssh
@@ -130,28 +138,9 @@ jobs:
 
       - name: Create Admin User and Bind Role
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} <<'EOF'
-            cat <<EOF2 | kubectl apply -f -
-            apiVersion: v1
-            kind: ServiceAccount
-            metadata:
-              name: admin-user
-              namespace: kubernetes-dashboard
-            ---
-            apiVersion: rbac.authorization.k8s.io/v1
-            kind: ClusterRoleBinding
-            metadata:
-              name: admin-user-binding
-            roleRef:
-              apiGroup: rbac.authorization.k8s.io
-              kind: ClusterRole
-              name: cluster-admin
-            subjects:
-              - kind: ServiceAccount
-                name: admin-user
-                namespace: kubernetes-dashboard
-            EOF2
-          EOF
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
+            kubectl apply -f /tmp/config/dashboard.yaml
+          "
 
       - name: Output Dashboard Login Token
         run: |
