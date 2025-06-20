@@ -21,7 +21,6 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --reload"
 
       - name: Deploy PXE config and Kickstart to PXE Host
-        working-directory: github-actions
         run: |
           pwd
           ls -lrt
