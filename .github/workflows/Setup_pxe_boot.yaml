@@ -21,7 +21,10 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --reload"
 
       - name: Deploy PXE config and Kickstart to PXE Host
+        working-directory: github-actions
         run: |
+          pwd
+          ls -lrt
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/pxelinux"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tftpboot/* /var/lib/tftpboot/pxelinux"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/pxelinux/pxelinux.cfg"
