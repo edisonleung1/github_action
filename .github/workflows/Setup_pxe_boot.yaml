@@ -13,18 +13,18 @@ jobs:
 
       - name: Install HTTP Server on PXE host
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "yum install -y httpd || sudo apt-get install -y apache2"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now httpd || sudo systemctl enable --now apache2"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=http || sudo ufw allow http"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload || true"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "dnf install -y httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=http"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload"
 
       - name: Install TFTP Server on PXE host
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "yum install -y tftp-server || sudo apt-get install -y tftpd-hpa"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "dnf install -y tftp-server"
           # Enable and start tftp service (name differs by distro)
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now tftp.socket || sudo systemctl enable --now tftpd"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=tftp || sudo ufw allow tftp"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload || true"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now tftp.socket"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=tftp"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload"
 
       - name: Prepare PXE boot files locally
         run: |
