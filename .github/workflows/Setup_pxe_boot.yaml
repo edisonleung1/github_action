@@ -31,7 +31,7 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tmp/pxelinux.cfg/* /var/lib/tftpboot/pxelinux.cfg/"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/www/html/centos9"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/centos9"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} “sudo cp /var/www/html/centos9/images/pxeboot/* /var/lib/tftpboot/centos9/”
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /var/www/html/centos9/images/pxeboot/* /var/lib/tftpboot/centos9/""
           scp kickstart/anaconda-ks.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tmp/anaconda-ks.cfg /var/www/html/"
             
