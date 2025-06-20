@@ -5,6 +5,7 @@ timeout 10
 label auto
   menu label Install CentOS 9 Automatically
   kernel centos9/vmlinuz
-  append initrd=centos9/initrd.img inst.ks=http://10.0.3.50/anaconda-ks.cfg inst.stage2=http://10.0.3.50/centos9
+  append initrd=centos9/initrd.img inst.stage2=http://10.0.3.50/centos9 inst.ks=http://10.0.3.50/anaconda-ks.cfg tmpfs_size=512M
+
 
 
