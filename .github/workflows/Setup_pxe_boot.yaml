@@ -31,11 +31,13 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tmp/pxelinux.cfg/* /var/lib/tftpboot/pxelinux.cfg/"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/www/html/centos9"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/centos9"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} “sudo cp /var/www/html/centos9/images/pxeboot/* /var/lib/tftpboot/centos9/”
           scp kickstart/anaconda-ks.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tmp/anaconda-ks.cfg /var/www/html/"
             
+        #   ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz"
+        #   ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img"
+
       - name: Enable and start services
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
