@@ -34,7 +34,7 @@ jobs:
           scp kickstart/anaconda-ks.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tmp/anaconda-ks.cfg /var/www/html/"
             
-    #   - name: Enable and start services
-    #     run: |
-    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
-    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now tftp.socket"
+      - name: Enable and start services
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now tftp.socket"
