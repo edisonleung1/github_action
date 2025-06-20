@@ -13,18 +13,18 @@ jobs:
 
       - name: Install HTTP Server on PXE host
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "dnf install -y httpd"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now httpd"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=http"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo dnf install -y httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --permanent --add-service=http"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --reload"
 
       - name: Install TFTP Server on PXE host
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "dnf install -y tftp-server"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo dnf install -y tftp-server"
           # Enable and start tftp service (name differs by distro)
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now tftp.socket"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=tftp"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now tftp.socket"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --permanent --add-service=tftp"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo firewall-cmd --reload"
 
       - name: Prepare PXE boot files locally
         run: |
