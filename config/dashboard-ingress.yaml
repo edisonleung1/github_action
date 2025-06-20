@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard-ingress
+  namespace: kubernetes-dashboard
+  annotations:
+    konghq.com/plugins: kubernetes-dashboard-auth  # Optional: apply auth plugin
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - host: 10.0.3.50  # Replace with your domain or use nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 443
+  tls:
+  - hosts:
+    - 10.0.3.50
+    secretName: dashboard-tls  # Kubernetes TLS secret for HTTPS

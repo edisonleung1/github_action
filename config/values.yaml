@@ -1,0 +1,38 @@
+app:
+  # tolerations:
+  #   - key: "node-role.kubernetes.io/control-plane"
+  #     operator: "Exists"
+  #     effect: "NoSchedule"
+  ingress:
+    enabled: true
+    hosts:
+      - localhost
+      - k8s-control-plane.cc
+    # tls:
+    #   enabled: false
+
+# metrics-server:
+#   enabled: true
+
+# cert-manager:
+#   enabled: true
+# kong:
+#   tolerations:
+#     - key: "node-role.kubernetes.io/control-plane"
+#       operator: "Exists"
+#       effect: "NoSchedule"
+
+# nginx:
+#   enabled: true
+#   controller:
+#     tolerations:
+#       - key: "node-role.kubernetes.io/control-plane"
+#         operator: "Exists"
+#         effect: "NoSchedule"
+#         value: "value"
+#     admissionWebhooks:
+#       tolerations:
+#         - key: "node-role.kubernetes.io/control-plane"
+#           operator: "Exists"
+#           effect: "NoSchedule"
+#           value: "value"

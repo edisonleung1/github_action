@@ -1,0 +1,52 @@
+name: Setup PXE Host
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-pxe-host:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install HTTP Server on PXE host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "yum install -y httpd || sudo apt-get install -y apache2"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now httpd || sudo systemctl enable --now apache2"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=http || sudo ufw allow http"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload || true"
+
+      - name: Install TFTP Server on PXE host
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "yum install -y tftp-server || sudo apt-get install -y tftpd-hpa"
+          # Enable and start tftp service (name differs by distro)
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "systemctl enable --now tftp.socket || sudo systemctl enable --now tftpd"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --permanent --add-service=tftp || sudo ufw allow tftp"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "firewall-cmd --reload || true"
+
+      - name: Prepare PXE boot files locally
+        run: |
+          mkdir -p output/pxelinux.cfg
+          if [ -f /usr/lib/syslinux/pxelinux.0 ]; then
+            cp /usr/lib/syslinux/pxelinux.0 output/
+          else
+            cp /usr/share/syslinux/pxelinux.0 output/
+          fi
+          curl -o output/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz
+          curl -o output/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img
+          cp pxe/pxelinux.cfg/default output/pxelinux.cfg/default
+          cp kickstart/anaconda-ks.cfg output/ks.cfg
+
+      - name: Deploy PXE files and Kickstart to PXE host
+        run: |
+          scp -r output/* ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/tmp/pxe/
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} bash -c "'
+            mkdir -p /var/lib/tftpboot/pxelinux.cfg
+            mv /tmp/pxe/pxelinux.0 /var/lib/tftpboot/
+            mv /tmp/pxe/vmlinuz /var/lib/tftpboot/
+            mv /tmp/pxe/initrd.img /var/lib/tftpboot/
+            mv /tmp/pxe/pxelinux.cfg/default /var/lib/tftpboot/pxelinux.cfg/
+            mv /tmp/pxe/ks.cfg /var/www/html/
+          '"

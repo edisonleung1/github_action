@@ -1,0 +1,8 @@
+default auto
+prompt 0
+timeout 10
+
+label auto
+  menu label Install CentOS 7 Automatically
+  kernel vmlinuz
+  append initrd=initrd.img inst.ks=http://10.0.3.11/ks.cfg

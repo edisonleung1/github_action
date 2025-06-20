@@ -70,9 +70,8 @@ jobs:
       - name: Configure containerd
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo mkdir -p /etc/containerd && sudo containerd config default &&
-            sudo tee /etc/containerd/config.toml > /dev/null &&
-            sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml &&
+            sudo mkdir -p /etc/containerd 
+            sudo containerd config default | sudo tee /etc/containerd/config.toml > /dev/null && sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml 
             sudo systemctl restart containerd
             "
 
@@ -83,7 +82,6 @@ jobs:
       - name: Install Required Packages
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo yum install -y kubectl &&
             sudo yum clean all &&
             sudo yum makecache &&
             sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
@@ -98,8 +96,8 @@ jobs:
       - name: Initialize Kubernetes Control Plane
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "
-            sudo systemctl enable --now kubelet
             sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+            sudo systemctl enable --now kubelet
           "
 
       - name: Configure kubectl for the user
