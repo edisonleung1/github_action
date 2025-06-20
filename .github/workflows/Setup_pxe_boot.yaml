@@ -26,11 +26,11 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo cp /tftpboot/* /var/lib/tftpboot/pxelinux"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo mkdir /var/lib/tftpboot/pxelinux/pxelinux.cfg"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "scp -r pxe/pxelinux.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/var/lib/tftpboot/pxelinux/pxelinux.cfg"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "scp kickstart/anaconda-ks.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/var/www/html/
+    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz"
+    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo curl -o /var/lib/tftpboot/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img"
+    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "scp kickstart/anaconda-ks.cfg ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/var/www/html/
             
-      - name: Enable and start services
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now tftp.socket"
+    #   - name: Enable and start services
+    #     run: |
+    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now httpd"
+    #       ssh ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "sudo systemctl enable --now tftp.socket"
