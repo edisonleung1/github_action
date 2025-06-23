@@ -1,0 +1,55 @@
+name: Setup PXE Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      VM_HOST:
+        type: string
+        description: 'VM Host to setup PXE'
+        required: true
+      SSH_USER:
+        type: string
+        description: 'SSH User to connect to the VM Host'
+        required: true
+      SSH_PASSWORD:
+        type: string
+        description: 'SSH Password to connect to the VM Host'
+        required: true
+
+jobs:
+  setup-pxe-host:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install and config dependencies
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo dnf install -y httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo dnf install -y tftp-server"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo firewall-cmd --permanent --add-service=http"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo firewall-cmd --permanent --add-service=tftp"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo firewall-cmd --reload"
+
+      - name: Deploy PXE config and Kickstart to PXE Host
+        run: |
+          pwd
+          ls -lrt
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/"
+          scp -r config/boot_loader/grub.cfg ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }}:/tmp/
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo cp /tmp/grub.cfg /var/lib/tftpboot/grub.cfg"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo mkdir -p /var/lib/tftpboot/centos9"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo mkdir -p /var/www/html/centos9"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo  mount -t nfs 10.0.3.5:/volume1/Public/System/Centos/CentOS-Stream-9-latest-x86_64-dvd1 /var/www/html/centos9"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo cp /var/www/html/centos9/images/pxeboot/* /var/lib/tftpboot/centos9/"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/vmlinuz http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/vmlinuz"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo curl -o /var/lib/tftpboot/centos9/initrd.img http://mirror.centos.org/centos/9-stream/BaseOS/x86_64/os/images/pxeboot/initrd.img"
+          scp config/kickstart/centos9.cfg ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }}:/tmp/
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo cp /tmp/centos9 /var/www/html/"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "chmod -R 744 /var/www/html/"
+            
+      - name: Enable and start services
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo systemctl enable --now httpd"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo systemctl enable --now tftp"
+          ssh ${{ secrets.SSH_USER }}@${{ inputs.VM_HOST }} "sudo systemctl enable --now tftp.socket"
